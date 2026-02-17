@@ -206,6 +206,102 @@ def get_expenses():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/expenses/<int:expense_id>', methods=['DELETE'])
+@jwt_required()
+def delete_expense(expense_id):
+    """Delete an expense - PROTECTED ROUTE"""
+    try:
+        # Get current user ID from token
+        current_user_id = int(get_jwt_identity())
+        
+        # Find the expense
+        expense = Expense.query.get(expense_id)
+        
+        # Check if expense exists
+        if not expense:
+            return jsonify({'error': 'Expense not found'}), 404
+        
+        # Check if expense belongs to current user (SECURITY!)
+        if expense.user_id != current_user_id:
+            return jsonify({'error': 'Unauthorized - this expense does not belong to you'}), 403
+        
+        # Delete the expense
+        db.session.delete(expense)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Expense deleted successfully',
+            'deleted_expense_id': expense_id
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
     
+@app.route('/api/expenses/category/<category>', methods=['GET'])
+@jwt_required()
+def get_expenses_by_category(category):
+    """Get expenses filtered by category - PROTECTED ROUTE"""
+    try:
+        # Get current user ID from token
+        current_user_id = int(get_jwt_identity())
+        
+        # Get expenses for this user and category
+        expenses = Expense.query.filter_by(
+            user_id=current_user_id,
+            category=category
+        ).all()
+        
+        # Convert to list of dictionaries
+        expenses_list = [expense.to_dict() for expense in expenses]
+        
+        # Calculate total for this category
+        total = sum(expense.amount for expense in expenses)
+        
+        return jsonify({
+            'category': category,
+            'expenses': expenses_list,
+            'total': total,
+            'count': len(expenses_list)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/expenses/summary', methods=['GET'])
+@jwt_required()
+def get_expense_summary():
+    """Get spending summary by category - PROTECTED ROUTE"""
+    try:
+        # Get current user ID from token
+        current_user_id = int(get_jwt_identity())
+        
+        # Get all expenses for this user
+        expenses = Expense.query.filter_by(user_id=current_user_id).all()
+        
+        # Group expenses by category and calculate totals
+        summary = {}
+        for expense in expenses:
+            category = expense.category
+            if category not in summary:
+                summary[category] = {
+                    'total': 0,
+                    'count': 0
+                }
+            summary[category]['total'] += expense.amount
+            summary[category]['count'] += 1
+        
+        # Calculate overall total
+        overall_total = sum(expense.amount for expense in expenses)
+        
+        return jsonify({
+            'summary': summary,
+            'overall_total': overall_total,
+            'total_expenses': len(expenses)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
