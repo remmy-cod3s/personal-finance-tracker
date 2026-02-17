@@ -30,3 +30,29 @@ class User(db.Model):
             'email': self.email,
             'created_at': self.created_at.isoformat()
         }
+
+class Expense(db.Model):
+    """Expense model for tracking user expenses"""
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.String(200))
+    date = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationship to User
+    user = db.relationship('User', backref='expenses')
+    
+    def to_dict(self):
+        """Convert expense object to dictionary"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'amount': self.amount,
+            'category': self.category,
+            'description': self.description,
+            'date': self.date.isoformat(),
+            'created_at': self.created_at.isoformat()
+        }

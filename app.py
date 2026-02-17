@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from models import db, bcrypt, User, Expense
 from models import db, bcrypt, User
 import os
 
@@ -135,6 +136,76 @@ def get_profile():
     return jsonify({
         'profile': user.to_dict()
     }), 200
+    
+@app.route('/api/expenses', methods=['POST'])
+@jwt_required()
+def create_expense():
+    """Create a new expense - PROTECTED ROUTE"""
+    try:
+        # Get current user ID from token
+        current_user_id = int(get_jwt_identity())
+        
+        # Get data from request
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or not data.get('amount') or not data.get('category'):
+            return jsonify({'error': 'Missing required fields (amount, category)'}), 400
+        
+        # Validate amount is a number
+        try:
+            amount = float(data.get('amount'))
+            if amount <= 0:
+                return jsonify({'error': 'Amount must be greater than 0'}), 400
+        except ValueError:
+            return jsonify({'error': 'Amount must be a valid number'}), 400
+        
+        # Create new expense
+        new_expense = Expense(
+            user_id=current_user_id,
+            amount=amount,
+            category=data.get('category'),
+            description=data.get('description', '')
+        )
+        
+        # Save to database
+        db.session.add(new_expense)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Expense created successfully',
+            'expense': new_expense.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/expenses', methods=['GET'])
+@jwt_required()
+def get_expenses():
+    """Get all expenses for current user - PROTECTED ROUTE"""
+    try:
+        # Get current user ID from token
+        current_user_id = int(get_jwt_identity())
+        
+        # Get all expenses for this user
+        expenses = Expense.query.filter_by(user_id=current_user_id).all()
+        
+        # Convert to list of dictionaries
+        expenses_list = [expense.to_dict() for expense in expenses]
+        
+        # Calculate total
+        total = sum(expense.amount for expense in expenses)
+        
+        return jsonify({
+            'expenses': expenses_list,
+            'total': total,
+            'count': len(expenses_list)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
