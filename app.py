@@ -249,6 +249,46 @@ def delete_expense(expense_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
     
+@app.route('/api/expenses/<int:expense_id>', methods=['PUT'])
+@jwt_required()
+def update_expense(expense_id):
+    """Update an expense - PROTECTED ROUTE"""
+    try:
+        current_user_id = int(get_jwt_identity())
+
+        expense = Expense.query.get(expense_id)
+        if not expense:
+            return jsonify({'error': 'Expense not found'}), 404
+
+        # Ownership check: users may only edit their own expenses
+        if expense.user_id != current_user_id:
+            return jsonify({'error': 'Unauthorized - this expense does not belong to you'}), 403
+
+        data = request.get_json()
+        if not data or not data.get('amount') or not data.get('category'):
+            return jsonify({'error': 'Missing required fields (amount, category)'}), 400
+
+        try:
+            amount = float(data.get('amount'))
+            if amount <= 0:
+                return jsonify({'error': 'Amount must be greater than 0'}), 400
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Amount must be a valid number'}), 400
+
+        expense.amount = amount
+        expense.category = data.get('category')
+        expense.description = data.get('description', '')
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Expense updated successfully',
+            'expense': expense.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500    
+    
 @app.route('/api/expenses/category/<category>', methods=['GET'])
 @jwt_required()
 def get_expenses_by_category(category):

@@ -4,10 +4,532 @@ PAGE = """<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title> Remon's Finance Tracker</title>
+<style>
+/* ================================
+   GLOBAL STYLES
+================================ */
+
+* {
+  box-sizing: border-box;
+}
+#warning-message {
+  text-align: center;
+  font-weight: bold;
+}
+
+#warning-message {
+  text-align: center;
+  font-weight: bold;
+  font-size: 17px;
+}
+
+:root {
+  --black: #080808;
+  --dark: #101010;
+  --dark-2: #151515;
+  --border: #333;
+  --red: #ed1c2e;
+  --red-dark: #b90f1e;
+  --white: #f5f5f5;
+  --gray: #a5a5a5;
+}
+
+body {
+  margin: 0;
+  padding: 0 3.5%;
+  background: var(--black);
+  color: var(--white);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  min-height: 100vh;
+}
+
+
+/* ================================
+   HEADER
+================================ */
+
+body > h1 {
+  margin: 0 -3.8% 35px;
+  padding: 28px 3.8%;
+  background: linear-gradient(90deg, #0c0c0c, #111);
+  border-bottom: 3px solid var(--red);
+
+  font-size: 32px;
+  font-weight: 700;
+  color: white;
+}
+
+body > h1::first-letter {
+  color: var(--red);
+}
+
+body > p:first-of-type {
+  color: var(--gray);
+  margin-top: -15px;
+  margin-bottom: 25px;
+}
+
+
+/* ================================
+   AUTH SECTION
+================================ */
+
+#auth-section {
+  max-width: 550px;
+  margin: 50px auto;
+  padding: 35px;
+  background: var(--dark);
+  border: 1px solid #3a0b10;
+  border-radius: 12px;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
+}
+
+#auth-section h2 {
+  color: white;
+  margin-top: 10px;
+  margin-bottom: 18px;
+}
+
+#auth-section h2::before {
+  content: "●";
+  color: var(--red);
+  margin-right: 10px;
+  font-size: 14px;
+}
+
+#auth-section input {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+
+/* ================================
+   INPUTS
+================================ */
+
+input,
+select {
+  background: #0d0d0d;
+  color: white;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 15px;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+input::placeholder {
+  color: #888;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 2px rgba(237, 28, 46, 0.12);
+}
+
+select {
+  cursor: pointer;
+}
+
+
+/* ================================
+   BUTTONS
+================================ */
+
+button {
+  background: var(--red);
+  color: white;
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+button:hover {
+  background: #ff2638;
+  border-color: #ff2638;
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+
+/* ================================
+   LOGGED-IN MESSAGE
+================================ */
+
+#app-section > p:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+
+  margin: -15px 0 30px;
+  color: var(--gray);
+}
+
+#who {
+  color: var(--red);
+}
+
+#app-section > p:first-child button {
+  background: transparent;
+  border-color: var(--red);
+  color: var(--red);
+  padding: 7px 14px;
+}
+
+#app-section > p:first-child button:hover {
+  background: var(--red);
+  color: white;
+}
+
+
+/* ================================
+   MAIN SECTIONS
+================================ */
+
+#app-section > h2,
+#form-title {
+  color: white;
+}
+
+#app-section > h2::before {
+  color: var(--red);
+}
+
+
+/* Add Expense Card */
+
+#app-section > h2:nth-of-type(1) {
+  display: none;
+}
+
+#form-title {
+  margin: 0;
+  padding: 0;
+}
+
+#form-title::before {
+  content: "+";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 28px;
+  height: 28px;
+  margin-right: 12px;
+
+  background: var(--red);
+  border-radius: 50%;
+  color: white;
+}
+
+#form-title,
+#form-title ~ input,
+#form-title ~ button {
+  /* handled by the expense form layout */
+}
+
+
+/* ================================
+   EXPENSE FORM
+================================ */
+
+#form-title {
+  margin-bottom: 18px;
+}
+
+#form-title ~ input {
+  margin-right: 12px;
+}
+
+#exp-amount {
+  width: 24%;
+}
+
+#exp-category {
+  width: 24%;
+}
+
+#exp-description {
+  width: 39%;
+}
+
+#save-btn {
+  min-width: 100px;
+}
+
+#cancel-btn {
+  background: transparent;
+  color: var(--red);
+}
+
+
+/* ================================
+   CARDS
+================================ */
+
+#form-title,
+#overall-total,
+#summary-rows,
+#expense-rows {
+  position: relative;
+}
+
+#app-section {
+  padding-bottom: 50px;
+}
+
+
+/* Add expense section */
+
+#form-title {
+  margin-top: 0;
+}
+
+#form-title,
+#form-title ~ input,
+#form-title ~ button {
+  /* visual grouping */
+}
+
+
+/* Create card-like sections using the headings */
+
+#form-title {
+  background: linear-gradient(90deg, #0d0d0d, #111);
+  border: 1px solid #551019;
+  border-radius: 10px 10px 0 0;
+  padding: 22px;
+}
+
+
+/* ================================
+   SPENDING SUMMARY
+================================ */
+
+#app-section > h2:nth-of-type(2) {
+  margin-top: 45px;
+  padding: 22px 22px 5px;
+
+  background: #0d0d0d;
+  border-left: 1px solid #551019;
+  border-right: 1px solid #551019;
+  border-top: 1px solid #551019;
+
+  border-radius: 10px 10px 0 0;
+}
+
+#overall-total {
+  display: inline-block;
+  margin-bottom: 15px;
+  color: var(--red);
+  font-size: 22px;
+}
+
+
+/* ================================
+   TABLES
+================================ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #0c0c0c;
+  border: 1px solid #333;
+  color: white;
+}
+
+th {
+  background: linear-gradient(90deg, #c80f20, #ed1c2e);
+  color: white;
+  text-align: left;
+  padding: 13px 15px;
+  font-weight: 700;
+}
+
+td {
+  padding: 13px 15px;
+  border: 1px solid #282828;
+}
+
+tbody tr {
+  transition: background 0.2s ease;
+}
+
+tbody tr:hover {
+  background: #171717;
+}
+
+
+/* ================================
+   SUMMARY TABLE
+================================ */
+
+#summary-rows {
+  display: table-row-group;
+}
+
+
+/* ================================
+   YOUR EXPENSES
+================================ */
+
+#app-section > h2:nth-of-type(3) {
+  margin-top: 45px;
+  padding: 22px 22px 15px;
+
+  background: #0d0d0d;
+  border: 1px solid #551019;
+  border-bottom: none;
+
+  border-radius: 10px 10px 0 0;
+}
+
+#filter {
+  margin-left: 8px;
+  min-width: 150px;
+}
+
+#total {
+  color: var(--red);
+  font-size: 20px;
+}
+
+#count {
+  color: #ccc;
+}
+
+
+/* ================================
+   EXPENSE TABLE
+================================ */
+
+#expense-rows td:last-child {
+  white-space: nowrap;
+  text-align: center;
+}
+
+#expense-rows button {
+  margin: 0 3px;
+  padding: 7px 13px;
+}
+
+#expense-rows button:first-child {
+  background: transparent;
+  color: white;
+  border-color: var(--red);
+}
+
+#expense-rows button:first-child:hover {
+  background: var(--red);
+}
+
+#expense-rows button:last-child {
+  background: var(--red);
+}
+
+
+/* ================================
+   STATUS MESSAGE
+================================ */
+
+#message {
+  margin: 20px 0;
+  color: #aaa;
+  font-style: italic;
+}
+
+#message:not(:empty) {
+  color: #ddd;
+}
+
+
+/* ================================
+   MOBILE RESPONSIVENESS
+================================ */
+
+@media (max-width: 900px) {
+
+  body {
+    padding: 0 20px;
+  }
+
+  body > h1 {
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    font-size: 26px;
+  }
+
+  #exp-amount,
+  #exp-category,
+  #exp-description {
+    width: 100%;
+    margin: 5px 0;
+  }
+
+  #save-btn,
+  #cancel-btn {
+    margin-top: 8px;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  #app-section > p:first-child {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+
+@media (max-width: 600px) {
+
+  body {
+    font-size: 14px;
+  }
+
+  body > h1 {
+    font-size: 22px;
+  }
+
+  #auth-section {
+    padding: 22px;
+  }
+
+  th,
+  td {
+    padding: 10px;
+  }
+
+  #filter {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}
+</style>
+
+
 </head>
 <body>
 <h1>Remon's personal Finance Tracker</h1>
-<p> If you arent Remon leave 🤬</p>
+<p id="warning-message"> Finance Tracker for Majestic 6'4 kings</p>
+
+
 
 <div id="auth-section">
   <h2>Register</h2>
@@ -26,10 +548,12 @@ PAGE = """<!DOCTYPE html>
   <p>Logged in as <b id="who"></b> <button onclick="logout()">Log out</button></p>
 
   <h2>Add expense</h2>
-  <input id="exp-amount" type="number" step="0.01" placeholder="Amount">
-  <input id="exp-category" placeholder="Category">
-  <input id="exp-description" placeholder="Description">
-  <button onclick="addExpense()">Add</button>
+  <h2 id="form-title">Add expense</h2>
+    <input id="exp-amount" type="number" step="0.01" placeholder="Amount">
+    <input id="exp-category" placeholder="Category">
+    <input id="exp-description" placeholder="Description">
+    <button id="save-btn" onclick="saveExpense()">Add</button>
+    <button id="cancel-btn" onclick="cancelEdit()" style="display:none">Cancel</button>
 
   <h2>Spending summary</h2>
 <p>Overall total: <b id="overall-total">0</b></p>
@@ -46,7 +570,7 @@ PAGE = """<!DOCTYPE html>
   </label>
   <p>Total: <b id="total">0</b> (<span id="count">0</span> items)</p>
   <table border="1" cellpadding="6">
-    <thead><tr><th>Category</th><th>Amount</th><th>Description</th><th></th></tr></thead>
+    <thead><tr><th>Date</th><th>Category</th><th>Amount</th><th>Description</th><th></th></tr></thead>
     <tbody id="expense-rows"></tbody>
   </table>
 </div>
@@ -55,6 +579,7 @@ PAGE = """<!DOCTYPE html>
 
 <script>
 let token = null;
+let editingId = null;
 
 function show(msg) {
   document.getElementById("message").textContent = msg;
@@ -106,6 +631,11 @@ function logout() {
   show("");
   document.getElementById("expense-rows").innerHTML = "";
 }
+
+function formatDate(value) {
+  return value ? value.slice(0, 10) : "";
+}
+
 async function loadExpenses() {
   const category = document.getElementById("filter").value;
 const path = category
@@ -118,7 +648,7 @@ const r = await api(path);
   tbody.innerHTML = "";
   for (const e of r.data.expenses) {
     const tr = document.createElement("tr");
-    for (const text of [e.category, e.amount, e.description]) {
+    for (const text of [formatDate(e.date), e.category, e.amount, e.description]) {
       const td = document.createElement("td");
       td.textContent = text;
       tr.appendChild(td);
@@ -127,6 +657,10 @@ const r = await api(path);
     const btn = document.createElement("button");
     btn.textContent = "Delete";
     btn.onclick = () => deleteExpense(e.id);
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Edit";
+    editBtn.onclick = () => startEdit(e);
+    td.appendChild(editBtn);
     td.appendChild(btn);
     tr.appendChild(td);
     tbody.appendChild(tr);
@@ -135,17 +669,46 @@ const r = await api(path);
   document.getElementById("count").textContent = r.data.count;
 }
 
-async function addExpense() {
-  const r = await api("/api/expenses", "POST", {
+function startEdit(e) {
+  editingId = e.id;
+  document.getElementById("exp-amount").value = e.amount;
+  document.getElementById("exp-category").value = e.category;
+  document.getElementById("exp-description").value = e.description;
+  document.getElementById("form-title").textContent = "Edit expense";
+  document.getElementById("save-btn").textContent = "Save";
+  document.getElementById("cancel-btn").style.display = "inline";
+  window.scrollTo(0, 0);
+}
+
+function resetForm() {
+  editingId = null;
+  for (const id of ["exp-amount", "exp-category", "exp-description"]) {
+    document.getElementById(id).value = "";
+  }
+  document.getElementById("form-title").textContent = "Add expense";
+  document.getElementById("save-btn").textContent = "Add";
+  document.getElementById("cancel-btn").style.display = "none";
+}
+
+function cancelEdit() {
+  resetForm();
+  show("");
+}
+
+async function saveExpense() {
+  const body = {
     amount: document.getElementById("exp-amount").value,
     category: document.getElementById("exp-category").value,
     description: document.getElementById("exp-description").value
-  });
+  };
+  const wasEditing = editingId !== null;
+  const r = wasEditing
+    ? await api("/api/expenses/" + editingId, "PUT", body)
+    : await api("/api/expenses", "POST", body);
+
   if (r.ok) {
-    for (const id of ["exp-amount", "exp-category", "exp-description"]) {
-      document.getElementById(id).value = "";
-    }
-    show("Expense added.");
+    show(wasEditing ? "Expense updated." : "Expense added.");
+    resetForm();
     refresh();
   } else {
     show(r.data.error || r.data.msg);
@@ -197,4 +760,4 @@ async function refresh() {
 }
 </script>
 </body>
-</html>"""
+"""
