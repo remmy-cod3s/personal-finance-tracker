@@ -1,16 +1,29 @@
 from flask import Flask, jsonify, request
 from models import db, bcrypt, User, Expense
-from models import db, bcrypt, User
 import os
+from dotenv import load_dotenv
+from sqlalchemy.engine import URL
+from sqlalchemy.pool import NullPool
+
+load_dotenv()
 
 app = Flask(__name__)
 
 # Configuration
-# Configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///finance_tracker.db'
+db_url = URL.create(
+    drivername="postgresql+psycopg2",
+    username=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    host=os.getenv("DB_HOST"),
+    port=int(os.getenv("DB_PORT", "6543")),
+    database=os.getenv("DB_NAME", "postgres"),
+)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"poolclass": NullPool}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-dev-secret-key')
+app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
+app.config['JWT_SECRET_KEY'] = os.environ['JWT_SECRET_KEY']
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 3600  # 1 hour in seconds
 
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity

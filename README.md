@@ -4,11 +4,11 @@ A RESTful API for tracking personal expenses with user authentication built with
 
 ## Features
 
-- 🔐 **User Authentication** - Secure registration and login with JWT tokens
-- 💰 **Expense Tracking** - Create, view, and delete expenses
-- 📊 **Analytics** - Get spending summaries grouped by category
-- 🔍 **Filtering** - Filter expenses by category
-- 🛡️ **Security** - Password hashing with bcrypt, protected routes
+-  **User Authentication** - Secure registration and login with JWT tokens
+-  **Expense Tracking** - Create, view, and delete expenses
+-  **Analytics** - Get spending summaries grouped by category
+-  **Filtering** - Filter expenses by category
+-  **Security** - Password hashing with bcrypt, protected routes
 
 ## Tech Stack
 
