@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy.engine import URL
 from sqlalchemy.pool import NullPool
+from frontend import PAGE
 
 load_dotenv()
 
@@ -39,11 +40,7 @@ with app.app_context():
 
 @app.route('/')
 def home():
-    return jsonify({
-        "message": "Finance Tracker API",
-        "version": "1.0",
-        "status": "running"
-    })
+    return PAGE
 
 @app.route('/health')
 def health():
