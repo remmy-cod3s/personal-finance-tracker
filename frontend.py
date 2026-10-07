@@ -521,6 +521,47 @@ tbody tr:hover {
     margin-top: 8px;
   }
 }
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(360px, calc(100vw - 40px));
+}
+
+.toast {
+  background: #151515;
+  color: var(--white);
+  border: 1px solid #333;
+  border-left: 4px solid var(--gray);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 15px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  animation: toast-in 0.2s ease;
+}
+
+.toast.error { border-left-color: var(--red); }
+.toast.success { border-left-color: #2ecc71; }
+
+.toast.leaving {
+  opacity: 0;
+  transform: translateX(20px);
+  transition: 0.25s ease;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast, .toast.leaving { animation: none; transition: none; }
+}
+
 </style>
 
 
@@ -575,37 +616,59 @@ tbody tr:hover {
   </table>
 </div>
 
-<p id="message"></p>
+<p id="toast-container"></p>
 
 <script>
 let token = null;
 let editingId = null;
-
-function show(msg) {
-  document.getElementById("message").textContent = msg;
+function show(msg, type = "info") {
+  if (!msg) return;
+  const container = document.getElementById("toast-container");
+  while (container.children.length >= 3) container.firstChild.remove();
+  const toast = document.createElement("div");
+  toast.className = "toast " + type;
+  toast.setAttribute("role", type === "error" ? "alert" : "status");
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add("leaving");
+    setTimeout(() => toast.remove(), 300);
+  }, type === "error" ? 6000 : 3500);
 }
-
 async function api(path, method = "GET", body = null) {
   const headers = { "Content-Type": "application/json" };
   if (token) headers["Authorization"] = "Bearer " + token;
-  const res = await fetch(path, {
-    method: method,
-    headers: headers,
-    body: body ? JSON.stringify(body) : null
-  });
-  const data = await res.json();
+  let res;
+  try {
+    res = await fetch(path, {
+      method: method,
+      headers: headers,
+      body: body ? JSON.stringify(body) : null
+    });
+  } catch (err) {
+    return { ok: false, data: { error: "Could not reach the server. Check your connection." } };
+  }
+  let data;
+  try {
+    data = await res.json();
+  } catch (err) {
+    data = { error: "Server returned status " + res.status };
+  }
+  if (res.status === 401 && token) {
+    logout();
+    return { ok: false, data: { error: "Your session expired. Please log in again." } };
+  }
   return { ok: res.ok, data: data };
 }
-
 async function register() {
   const r = await api("/api/register", "POST", {
     username: document.getElementById("reg-username").value,
     email: document.getElementById("reg-email").value,
     password: document.getElementById("reg-password").value
   });
-  show(r.ok ? "Registered! Now log in." : r.data.error);
+  if (r.ok) show("Account created. You can now log in.", "success");
+  else show(r.data.error || "Registration failed.", "error");
 }
-
 async function login() {
   const username = document.getElementById("login-username").value;
   const r = await api("/api/login", "POST", {
@@ -617,33 +680,31 @@ async function login() {
     document.getElementById("who").textContent = username;
     document.getElementById("auth-section").style.display = "none";
     document.getElementById("app-section").style.display = "block";
-    show("");
+    show("Welcome back, " + username + ".", "success");
     refresh();
   } else {
-    show(r.data.error);
+    show(r.data.error || "Login failed.", "error");
   }
 }
-
 function logout() {
   token = null;
+  resetForm();
   document.getElementById("auth-section").style.display = "block";
   document.getElementById("app-section").style.display = "none";
-  show("");
   document.getElementById("expense-rows").innerHTML = "";
+  document.getElementById("summary-rows").innerHTML = "";
+  document.getElementById("filter").value = "";
 }
-
 function formatDate(value) {
   return value ? value.slice(0, 10) : "";
 }
-
 async function loadExpenses() {
   const category = document.getElementById("filter").value;
-const path = category
-  ? "/api/expenses/category/" + encodeURIComponent(category)
-  : "/api/expenses";
-const r = await api(path);
-  if (!r.ok) { show(r.data.error || r.data.msg); return; }
-
+  const path = category
+    ? "/api/expenses/category/" + encodeURIComponent(category)
+    : "/api/expenses";
+  const r = await api(path);
+  if (!r.ok) { show(r.data.error || r.data.msg, "error"); return; }
   const tbody = document.getElementById("expense-rows");
   tbody.innerHTML = "";
   for (const e of r.data.expenses) {
@@ -668,7 +729,6 @@ const r = await api(path);
   document.getElementById("total").textContent = r.data.total;
   document.getElementById("count").textContent = r.data.count;
 }
-
 function startEdit(e) {
   editingId = e.id;
   document.getElementById("exp-amount").value = e.amount;
@@ -679,7 +739,6 @@ function startEdit(e) {
   document.getElementById("cancel-btn").style.display = "inline";
   window.scrollTo(0, 0);
 }
-
 function resetForm() {
   editingId = null;
   for (const id of ["exp-amount", "exp-category", "exp-description"]) {
@@ -689,12 +748,9 @@ function resetForm() {
   document.getElementById("save-btn").textContent = "Add";
   document.getElementById("cancel-btn").style.display = "none";
 }
-
 function cancelEdit() {
   resetForm();
-  show("");
 }
-
 async function saveExpense() {
   const body = {
     amount: document.getElementById("exp-amount").value,
@@ -705,25 +761,27 @@ async function saveExpense() {
   const r = wasEditing
     ? await api("/api/expenses/" + editingId, "PUT", body)
     : await api("/api/expenses", "POST", body);
-
   if (r.ok) {
-    show(wasEditing ? "Expense updated." : "Expense added.");
+    show(wasEditing ? "Expense updated." : "Expense added.", "success");
     resetForm();
     refresh();
   } else {
-    show(r.data.error || r.data.msg);
+    show(r.data.error || r.data.msg, "error");
   }
 }
-
 async function deleteExpense(id) {
+  if (editingId === id) resetForm();
   const r = await api("/api/expenses/" + id, "DELETE");
-  show(r.ok ? "Expense deleted." : (r.data.error || r.data.msg));
-  if (r.ok) refresh();
+  if (r.ok) {
+    show("Expense deleted.", "success");
+    refresh();
+  } else {
+    show(r.data.error || r.data.msg, "error");
+  }
 }
 async function loadSummary() {
   const r = await api("/api/expenses/summary");
-  if (!r.ok) { show(r.data.error || r.data.msg); return; }
-
+  if (!r.ok) { show(r.data.error || r.data.msg, "error"); return; }
   const select = document.getElementById("filter");
   const previous = select.value;
   select.innerHTML = "";
@@ -731,7 +789,6 @@ async function loadSummary() {
   all.value = "";
   all.textContent = "All";
   select.appendChild(all);
-
   const tbody = document.getElementById("summary-rows");
   tbody.innerHTML = "";
   for (const [category, info] of Object.entries(r.data.summary)) {
@@ -742,18 +799,15 @@ async function loadSummary() {
       tr.appendChild(td);
     }
     tbody.appendChild(tr);
-
     const opt = document.createElement("option");
     opt.value = category;
     opt.textContent = category;
     select.appendChild(opt);
   }
-
   select.value = previous;
   if (select.selectedIndex === -1) select.value = "";
   document.getElementById("overall-total").textContent = r.data.overall_total;
 }
-
 async function refresh() {
   await loadSummary();
   await loadExpenses();
